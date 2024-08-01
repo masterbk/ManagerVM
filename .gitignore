@@ -1,0 +1,11 @@
+/.vs/*
+/ManagerVM.Contacts/bin/*
+/ManagerVM.Contacts/obj/*
+/ManagerVM.Data/obj/*
+/ManagerVM.Helper/bin/*
+/ManagerVM.Helper/obj/*
+/ManagerVM.Services/obj/*
+/ManagerVM.Services/bin/*
+/ManagerVM.WebApi/bin/*
+/ManagerVM.WebApi/obj/*
+/ManagerVM.WebApi/logs/*

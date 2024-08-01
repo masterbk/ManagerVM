@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>D:\LMS\Openstack_WWW</_PublishTargetUrl>
+    <History>True|2024-07-23T10:42:04.0354500Z||;True|2024-07-23T17:31:12.0422123+07:00||;True|2024-07-23T17:24:03.0238310+07:00||;False|2024-07-23T17:21:35.5707670+07:00||;True|2024-07-23T16:44:15.6745416+07:00||;True|2024-07-23T09:44:37.6167610+07:00||;True|2024-07-23T09:24:40.4210148+07:00||;True|2024-07-23T09:22:50.0720154+07:00||;True|2024-07-23T09:20:19.1605693+07:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>
