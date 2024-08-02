@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 
 namespace ManagerVM.Contacts.Models.LMSModels.Request
 {
-    public class CreateCategoryRequestModel
+    /// <summary>
+    /// wsfunction: local_cms_api_questionbank_categorycreate
+    /// </summary>
+    public class CreateQuestionCategoryRequestModel
     {
         public string name { get; set; }
-        public string code { get; set; }
+        public string idnumber { get; set; }
         public string description { get; set; }
-        public long img { get; set; }
     }
 }

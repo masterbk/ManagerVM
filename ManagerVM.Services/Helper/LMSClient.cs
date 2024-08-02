@@ -1,5 +1,6 @@
 ﻿using ManagerVM.Contacts.Models.LMSModels.Request;
 using ManagerVM.Contacts.Models.LMSModels.Response;
+using ManagerVM.Helper;
 using ManagerVM.Services.Features.User.Queries;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
@@ -100,7 +101,7 @@ namespace ManagerVM.Services.Helper
         /// <typeparam name="T"></typeparam>
         /// <param name="model"></param>
         /// <returns></returns>
-        public Task<ResponseModel<CreateCourseResponseDataModel>> CreateCourseAsync(string hostName, CreateCourseRequestModel model);
+        public Task<ResponseModel<List<CreateCourseResponseDataModel>>> CreateCourseAsync(string hostName, CreateCourseRequestModel model);
 
         /// <summary>
         /// Tạo mới học viên
@@ -124,7 +125,7 @@ namespace ManagerVM.Services.Helper
         /// <typeparam name="T"></typeparam>
         /// <param name="model"></param>
         /// <returns></returns>
-        public Task<ResponseModel<CreateModuleScormResponseDataModel>> CreateModuleScormAsync(string hostName, CreateModuleScormRequestModel model);
+        public Task<ResponseModel<string>> CreateModuleScormAsync(string hostName, CreateModuleScormRequestModel model);
 
         /// <summary>
         /// Tải về media
@@ -132,7 +133,66 @@ namespace ManagerVM.Services.Helper
         /// <param name="url"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public Task<byte[]> DownloadMediaAsync(string url, string token = "");
+        public Task<(byte[], string)> DownloadMediaAsync(string url, string token = "");
+
+        /// <summary>
+        /// Lấy thông tin module Quiz
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<GetModuleQuizResponseDataModel>> GetModuleQuizAsync(string hostName, long moduleId, string token = "");
+
+        /// <summary>
+        /// Tạo mới module Quiz
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<string>> CreateModuleQuizAsync(string hostName, CreateModuleQuizRequestModel model);
+
+        /// <summary>
+        /// Tạo mới Question cate
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// Chưa trả về thông tin sau khi tạo
+        public Task<ResponseModel<string>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model);
+
+        /// <summary>
+        /// Lấy danh sách Question cate
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<GetListReponseDataModel<GetQuestionCategoriesResponseDataModel>>> GetQuestionCategoriesAsync(string hostName, string token = "");
+
+        /// <summary>
+        /// Lấy thông tin chi tiết Question
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="questionId"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string token = "");
+
+        /// <summary>
+        /// Lấy chi tiết thông tin Question cate
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<GetQuestionCategoryDetailResponseDataModel>> GetQuestionCategoryDetailAsync(string hostName, long categoryId, string token = "");
+
+        /// <summary>
+        /// Tạo mới Question
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// Chưa trả về thông tin sau khi tạo
+        public Task<ResponseModel<string>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model);
     }
 
     public class LMSClient : ILMSClient
@@ -187,7 +247,7 @@ namespace ManagerVM.Services.Helper
             return strContent?.ParseTo<ResponseModel<T>>();
         }
 
-        public async Task<ResponseModel<CreateCourseResponseDataModel>> CreateCourseAsync(string hostName, CreateCourseRequestModel model)
+        public async Task<ResponseModel<List<CreateCourseResponseDataModel>>> CreateCourseAsync(string hostName, CreateCourseRequestModel model)
         {
             var token = await GetTokenAsync(hostName);
             var form = model.ToFormData(new Dictionary<string, string>
@@ -205,7 +265,7 @@ namespace ManagerVM.Services.Helper
 
             var strContent = await res.Content.ReadAsStringAsync();
 
-            return strContent?.ParseTo<ResponseModel<CreateCourseResponseDataModel>>();
+            return strContent?.ParseTo<ResponseModel<List<CreateCourseResponseDataModel>>>();
         }
 
         public async Task<ResponseModel<T>> CreateStudentAsync<T>(string hostName, CreateStudentRequestModel model)
@@ -263,7 +323,7 @@ namespace ManagerVM.Services.Helper
 
             var _httpClient = _httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri(hostName);
-            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?classId={classId}&methodType=inClass&moodlewsrestformat=json&pageIndex=1&pageSize=1000&service=vtc_cms_api&wsfunction=local_cms_api_categoryclass_courselist&wstoken={token}");
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?classId={classId}&methodType=inClass&moodlewsrestformat=json&pageIndex=1&pageSize=50&service=vtc_cms_api&wsfunction=local_cms_api_categoryclass_courselist&wstoken={token}");
             res.EnsureSuccessStatusCode();
 
             var strcontent = await res.Content.ReadAsStringAsync();
@@ -277,7 +337,7 @@ namespace ManagerVM.Services.Helper
 
             var _httpClient = _httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri(hostName);
-            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?classId={classId}&moodlewsrestformat=json&pageIndex=1&pageSize=10000&service=vtc_cms_api&wsfunction=local_cms_api_categoryclass_studentlist&wstoken={token}");
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?classId={classId}&moodlewsrestformat=json&pageIndex=1&pageSize=50&service=vtc_cms_api&wsfunction=local_cms_api_categoryclass_studentlist&wstoken={token}");
             res.EnsureSuccessStatusCode();
 
             var strcontent = await res.Content.ReadAsStringAsync();
@@ -358,18 +418,21 @@ namespace ManagerVM.Services.Helper
             return strContent?.ParseTo<ResponseModel<GetStudentDetailResponseDataModel>>();
         }
 
-        public async Task<byte[]> DownloadMediaAsync(string url, string token = "")
+        public async Task<(byte[], string)> DownloadMediaAsync(string url, string token = "")
         {
             var _httpClient = _httpClientFactory.CreateClient();
             HttpResponseMessage response = await _httpClient.GetAsync(url);
 
             // Kiểm tra xem yêu cầu có thành công hay không
             response.EnsureSuccessStatusCode();
+            var contentType = response.Content.Headers.ContentType;
+
+            var extension = contentType?.MediaType?.MediaTypeToExtension();
 
             // Đọc nội dung phản hồi dưới dạng mảng byte
             byte[] imageBytes = await response.Content.ReadAsByteArrayAsync();
 
-            return imageBytes;
+            return (imageBytes, extension);
         }
 
         public async Task<ResponseModel<GetModuleScormResponseDataModel>> GetModuleScormlAsync(string hostName, long moduleid, string token = "")
@@ -386,7 +449,7 @@ namespace ManagerVM.Services.Helper
             return strContent?.ParseTo<ResponseModel<GetModuleScormResponseDataModel>>();
         }
 
-        public async Task<ResponseModel<CreateModuleScormResponseDataModel>> CreateModuleScormAsync(string hostName, CreateModuleScormRequestModel model)
+        public async Task<ResponseModel<string>> CreateModuleScormAsync(string hostName, CreateModuleScormRequestModel model)
         {
             var token = await GetTokenAsync(hostName);
             var form = model.ToFormData(new Dictionary<string, string>
@@ -404,7 +467,126 @@ namespace ManagerVM.Services.Helper
 
             var strContent = await res.Content.ReadAsStringAsync();
 
-            return strContent?.ParseTo<ResponseModel<CreateModuleScormResponseDataModel>>();
+            return strContent?.ParseTo<ResponseModel<string>>();
+        }
+
+        public async Task<ResponseModel<GetModuleQuizResponseDataModel>> GetModuleQuizAsync(string hostName, long moduleId, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?moduleid={moduleId}&moodlewsrestformat=json&service=vtc_cms_api&wsfunction=local_cms_api_course_module_view_quiz&wstoken={token}");
+            res.EnsureSuccessStatusCode();
+
+            var strcontent = await res.Content.ReadAsStringAsync();
+
+            return strcontent?.ParseTo<ResponseModel<GetModuleQuizResponseDataModel>>();
+        }
+
+        public async Task<ResponseModel<string>> CreateModuleQuizAsync(string hostName, CreateModuleQuizRequestModel model)
+        {
+            var token = await GetTokenAsync(hostName);
+            var form = model.ToFormData(new Dictionary<string, string>
+            {
+                { "moodlewsrestformat", "json" },
+                { "wsfunction", "local_cms_api_course_module_create_quiz" },
+                { "wstoken", token },
+                { "service", "vtc_cms_api" }
+            });
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.PostAsync("/webservice/rest/server.php", form);
+            res.EnsureSuccessStatusCode();
+
+            var strContent = await res.Content.ReadAsStringAsync();
+
+            return strContent?.ParseTo<ResponseModel<string>>();
+        }
+
+        public async Task<ResponseModel<string>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model)
+        {
+            var token = await GetTokenAsync(hostName);
+            var form = model.ToFormData(new Dictionary<string, string>
+            {
+                { "moodlewsrestformat", "json" },
+                { "wsfunction", "local_cms_api_questionbank_categorycreate" },
+                { "wstoken", token },
+                { "service", "vtc_cms_api" }
+            });
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.PostAsync("/webservice/rest/server.php", form);
+            res.EnsureSuccessStatusCode();
+
+            var strContent = await res.Content.ReadAsStringAsync();
+
+            return strContent?.ParseTo<ResponseModel<string>>();
+        }
+
+        public async Task<ResponseModel<GetListReponseDataModel<GetQuestionCategoriesResponseDataModel>>> GetQuestionCategoriesAsync(string hostName, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?moodlewsrestformat=json&pageIndex=1&pageSize=500&service=vtc_cms_api&wsfunction=local_cms_api_questionbank_categorylist&wstoken={token}");
+            res.EnsureSuccessStatusCode();
+
+            var strcontent = await res.Content.ReadAsStringAsync();
+
+            return strcontent?.ParseTo<ResponseModel<GetListReponseDataModel<GetQuestionCategoriesResponseDataModel>>>();
+        }
+
+        public async Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?id={questionId}&moodlewsrestformat=json&service=vtc_cms_api&type=multichoiceset&wsfunction=local_cms_api_questionbank_questionview&wstoken={token}");
+            res.EnsureSuccessStatusCode();
+
+            var strcontent = await res.Content.ReadAsStringAsync();
+
+            return strcontent?.ParseTo<ResponseModel<GetQuestionDetailResponseDataModel>>();
+        }
+
+        public async Task<ResponseModel<GetQuestionCategoryDetailResponseDataModel>> GetQuestionCategoryDetailAsync(string hostName, long categoryId, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?id={categoryId}&moodlewsrestformat=json&service=vtc_cms_api&wsfunction=local_cms_api_questionbank_categoryview&wstoken={token}");
+            res.EnsureSuccessStatusCode();
+
+            var strcontent = await res.Content.ReadAsStringAsync();
+
+            return strcontent?.ParseTo<ResponseModel<GetQuestionCategoryDetailResponseDataModel>>();
+        }
+
+        public async Task<ResponseModel<string>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model)
+        {
+            var token = await GetTokenAsync(hostName);
+            var form = model.ToFormData(new Dictionary<string, string>
+            {
+                { "moodlewsrestformat", "json" },
+                { "wsfunction", "local_cms_api_questionbank_questioncreate" },
+                { "wstoken", token },
+                { "service", "vtc_cms_api" }
+            });
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.PostAsync("/webservice/rest/server.php", form);
+            res.EnsureSuccessStatusCode();
+
+            var strContent = await res.Content.ReadAsStringAsync();
+
+            return strContent?.ParseTo<ResponseModel<string>>();
         }
     }
 }

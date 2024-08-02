@@ -3,6 +3,7 @@ using ManagerVM.Contacts.Models;
 using ManagerVM.Contacts.Models.LMSModels.Request;
 using ManagerVM.Contacts.Models.LMSModels.Response;
 using ManagerVM.Data;
+using ManagerVM.Helper;
 using ManagerVM.Services.Features.VM.Notifications.DatabaseInstall;
 using ManagerVM.Services.Helper;
 using MediatR;
@@ -29,6 +30,8 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
 
         public async Task Handle(InitializationSuccessfulDatabaseNotification notification, CancellationToken cancellationToken)
         {
+            var listCategory = new Dictionary<string, long>();
+
             var vm = await _dbContext.VMEntities.AsNoTracking().FirstOrDefaultAsync(f=>f.InstanceId.Equals(notification.VMInstanceId), cancellationToken);
 
             if (vm == null)
@@ -52,16 +55,16 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                 {
                     code = room.Data.Code,
                     name = room.Data.Name,
-                    status = room.Data.StatusId,
+                    statusId = room.Data.StatusId,
                     studentLimit = room.Data.StudentLimit
                 };
 
                 //Lấy thông tin lĩnh vực từ MainServer
                 var categoryRoom = (await _lmsClient.GetCategoryOfClassAsync(_moodleConfig.MainServer.HostName, room.Data.CategoryId, tokenMainServer)).Data;
-
+                
                 //Tải Img của lĩnh vực lên server mới
                 var imageCategoryRoom = await _lmsClient.DownloadMediaAsync(categoryRoom.Img);//Convert.FromBase64String(categoryRoom.Img.Replace("data:image/svg+xml;base64,",""));
-                var resUploadImageCategoryRoom = await _lmsClient.UploadMediaAsync(vm.HostName, imageCategoryRoom, "image 1");
+                var resUploadImageCategoryRoom = await _lmsClient.UploadMediaAsync(vm.HostName, imageCategoryRoom.Item1, $"image{imageCategoryRoom.Item2}");
 
                 //Tạo lĩnh vực của lớp học trên server mới
                 var resCreateCategoryRoom = await _lmsClient.CreateCategoryAsync(vm.HostName, new Contacts.Models.LMSModels.Request.CreateCategoryRequestModel
@@ -69,8 +72,10 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                     name = categoryRoom.Name,
                     code = categoryRoom.Code,
                     description = categoryRoom.Description,
-                    imgId = resUploadImageCategoryRoom.Data[0].Itemid
+                    img = resUploadImageCategoryRoom.Data[0].Itemid
                 });
+
+                listCategory.Add(categoryRoom.Code, resCreateCategoryRoom.Data[0].Id);
 
                 newRoom.categoryId = resCreateCategoryRoom.Data[0].Id;
 
@@ -88,11 +93,11 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                     var newCourse = new CreateCourseRequestModel
                     {
                         description = courseDetail.Data.Description,
-                        endDate = courseDetail.Data.Enddate,
-                        fullName = courseDetail.Data.Fullname,
+                        enddate = courseDetail.Data.Enddate,
+                        fullname = courseDetail.Data.Fullname,
                         idnumber = courseDetail.Data.Idnumber,
-                        shortName = courseDetail.Data.Shortname,
-                        startDate = courseDetail.Data.Startdate
+                        shortname = courseDetail.Data.Shortname,
+                        startdate = courseDetail.Data.Startdate
                     };
 
                     //Lấy thông tin lĩnh vực của khóa
@@ -101,20 +106,27 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                         var categoryCourse = (await _lmsClient.GetCategoryOfClassAsync(_moodleConfig.MainServer.HostName,
                         courseDetail.Data.Categoryid.Value, tokenMainServer)).Data;
 
-                        //Tải Img của lĩnh vực lên server mới
-                        var imageCategoryCourse = Convert.FromBase64String(categoryCourse.Img.Replace("data:image/svg+xml;base64,", ""));
-                        var resUploadImageCategoryCourse = await _lmsClient.UploadMediaAsync(vm.HostName, imageCategoryCourse, "image 1");
-
-                        //Tạo mới lĩnh vực của khóa học
-                        var resCreateCategoryCourse = await _lmsClient.CreateCategoryAsync(vm.HostName, new Contacts.Models.LMSModels.Request.CreateCategoryRequestModel
+                        if (!listCategory.Keys.Contains(categoryCourse.Code))
                         {
-                            name = categoryCourse.Name,
-                            code = categoryCourse.Code,
-                            description = categoryCourse.Description,
-                            imgId = resUploadImageCategoryCourse.Data[0].Itemid
-                        });
+                            //Tải Img của lĩnh vực lên server mới
+                            var imageCategoryCourse = await _lmsClient.DownloadMediaAsync(categoryCourse.Img);//Convert.FromBase64String(categoryCourse.Img.Replace("data:image/svg+xml;base64,", ""));
+                            var resUploadImageCategoryCourse = await _lmsClient.UploadMediaAsync(vm.HostName, imageCategoryCourse.Item1, $"image{imageCategoryCourse.Item2}");
 
-                        newCourse.categoryId = resCreateCategoryCourse.Data[0].Id;
+                            //Tạo mới lĩnh vực của khóa học
+                            var resCreateCategoryCourse = await _lmsClient.CreateCategoryAsync(vm.HostName, new Contacts.Models.LMSModels.Request.CreateCategoryRequestModel
+                            {
+                                name = categoryCourse.Name,
+                                code = categoryCourse.Code,
+                                description = categoryCourse.Description,
+                                img = resUploadImageCategoryCourse.Data[0].Itemid
+                            });
+
+                            newCourse.categoryid = resCreateCategoryCourse.Data[0].Id;
+                        }
+                        else
+                        {
+                            newCourse.categoryid = listCategory[categoryCourse.Code];
+                        }
                     }
 
                     //Tải ảnh đại diện của khóa học lên server mới
@@ -124,7 +136,7 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
 
                         //Tải lên image của khóa học
                         var resUploadImageCourse = await _lmsClient.UploadMediaAsync(vm.HostName,
-                            imageCourse, "Image 1");
+                            imageCourse.Item1, $"Image{imageCourse.Item2}");
 
                         newCourse.img = resUploadImageCourse.Data[0].Itemid;
                     }
@@ -142,12 +154,62 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                     var resCreateCourse = await _lmsClient.CreateCourseAsync(vm.HostName, newCourse);
 
                     //Tạo mới hoạt động
+                    //Tạo mới Module Scorm
+                    var scormModule = courseDetail.Data.Modules?.FirstOrDefault(f => f.modname == "scorm");
+                    if (scormModule != null)
+                    {
+                        var scormModuleDetail = (await _lmsClient.GetModuleScormlAsync(_moodleConfig.MainServer.HostName,
+                            scormModule.id, tokenMainServer))?.Data;
 
+                        var newScormModule = new CreateModuleScormRequestModel
+                        {
+                            attemptsgrading = scormModuleDetail?.attemptsgrading??0,
+                            completiontracking = scormModuleDetail?.completiontracking ?? 0,
+                            courseid = resCreateCourse.Data[0].Id,
+                            description = scormModuleDetail?.description,
+                            expectcompletedon = scormModuleDetail?.expectcompletedon ?? 0,
+                            forcenewattempt = scormModuleDetail?.forcenewattempt ?? 0,
+                            grademethod = scormModuleDetail?.grademethod ?? 0,
+                            lockafterfinalattempt = scormModuleDetail?.lockafterfinalattempt ?? 0,
+                            maxattempt = scormModuleDetail?.maxattempt ?? 0,
+                            maxgrade = scormModuleDetail?.maxgrade ?? 0,
+                            name = scormModuleDetail?.name,
+                            requiregrade = scormModuleDetail?.requiregrade ?? 0,
+                            requireview = scormModuleDetail?.requireview ?? 0,
+                            restrictaccess = null,// scormModuleDetail?.restrictaccess,
+                            section = 0,//scormModuleDetail?.section,
+                            timeactivity = scormModuleDetail?.timeactivity,
+                            timeclose = scormModuleDetail?.timeclose ?? 0,
+                            timeopen = scormModuleDetail?.timeopen ?? 0
+                        };
 
-                    listNewCourseId.Add(resCreateCourse.Data.Id);
+                        if (!string.IsNullOrWhiteSpace(scormModuleDetail.filelink))
+                        {
+                            var fileScormData = await _lmsClient.DownloadMediaAsync(scormModuleDetail.filelink, tokenMainServer);
+                            var uploadFileScorm = await _lmsClient.UploadMediaAsync(vm.HostName, fileScormData.Item1, $"File_Scorm{fileScormData.Item2}");
+                            newScormModule.file = uploadFileScorm.Data[0].Itemid;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(scormModuleDetail.picture))
+                        {
+                            var pictureData = await _lmsClient.DownloadMediaAsync(scormModuleDetail.picture, tokenMainServer);
+                            var uploadPictue = await _lmsClient.UploadMediaAsync(vm.HostName, pictureData.Item1, $"pictue{pictureData.Item2}");
+                            newScormModule.picture = uploadPictue.Data[0].Itemid;
+                        }
+                        
+                        var resCreateMpdule = await _lmsClient.CreateModuleScormAsync(vm.HostName, newScormModule);
+                        if(resCreateMpdule?.StatusCode != 1)
+                        {
+                            throw new Exception("Create Module Scorm fail!");
+                        }
+                    }
+
+                    //Tạo mới khóa học QUIZ
+
+                    listNewCourseId.Add(resCreateCourse.Data[0].Id);
                 }
 
-                newRoom.courseIds = listNewCourseId.ToArray();
+                newRoom.courseIds = listNewCourseId.ToJson();
 
                 //Lấy danh sách học viên
                 var studens = await _lmsClient.GetStudentsAsync(_moodleConfig.MainServer.HostName,
@@ -184,7 +246,7 @@ namespace ManagerVM.Services.Features.VM.Handlers.SyncDatabase
                     listNewStudentId.Add(resCreateStudent.Data.Id);
                 }
 
-                newRoom.userIds = listNewStudentId.ToArray();
+                newRoom.userIds = listNewStudentId.ToJson();
 
                 var resCreateRoom = await _lmsClient.CreateClassAsync<dynamic>(vm.HostName, newRoom);
 

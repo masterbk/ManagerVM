@@ -5,6 +5,7 @@ using ManagerVM.Services;
 using ManagerVM.Services.Features.VM.Commands;
 using ManagerVM.Services.Features.VM.Notifications.DatabaseInstall;
 using ManagerVM.Services.Features.VM.Queries;
+using ManagerVM.Services.Helper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,9 +16,12 @@ namespace ManagerVM.WebApi.Controllers
     public class VMController : BaseController
     {
         private readonly IMediator _mediator;
-        public VMController(ISender sender, CurrentUserProvider currentUserProvider, IMediator mediator) : base(sender, currentUserProvider)
+        private readonly ILMSClient _client;
+        public VMController(ISender sender, CurrentUserProvider currentUserProvider, IMediator mediator,
+            ILMSClient client) : base(sender, currentUserProvider)
         {
             _mediator = mediator;
+            _client = client;
         }
 
         /// <summary>
@@ -117,12 +121,12 @@ namespace ManagerVM.WebApi.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet("Test")]
-        public async Task<bool> Test()
+        [HttpGet("Test/{vmInstanceId}")]
+        public async Task<bool> Test([FromRoute]string vmInstanceId)
         {
             await _mediator.Publish(new InitializationSuccessfulDatabaseNotification
             {
-                VMInstanceId = "18592b26-c28d-45ce-ae7e-8e6581d9db55"
+                VMInstanceId = vmInstanceId
             });
 
             return true;

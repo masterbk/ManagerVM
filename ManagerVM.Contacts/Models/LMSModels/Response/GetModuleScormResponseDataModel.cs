@@ -42,7 +42,6 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
         public string picture { get; set; }
         public long? requiregrade { get; set; }
         public int? requireminscore { get; set; }
-        public int MyProperty { get; set; }
         public int requireview { get; set; }
         public string restrictaccess { get; set; }
         public Restrictaccess restrictaccessObj

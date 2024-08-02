@@ -40,12 +40,8 @@ namespace ManagerVM.Contacts.Models.LMSModels.Request
         public long? section { get; set; }
         public long? requiregrade { get; set; }
         public long? requireview { get; set; }
-        public Restrictaccess restrictaccessObj { get; set; }
-        public string restrictaccess { get
-            {
-                return restrictaccessObj?.ToJson();
-            }
-        }
+        //public Restrictaccess restrictaccessObj { get; set; }
+        public string restrictaccess { get; set; }
     }
 
     public class Restrictaccess

@@ -23,7 +23,7 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
         /// </summary>
         public string Img { get; set; }
         public List<ReferenceObject> References { get; set; }
-        public dynamic[] Modules { get; set; }
+        public ModuleModel[] Modules { get; set; }
     }
 
     public class ReferenceObject
@@ -32,5 +32,19 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
         public long Id { get; set; }
         public string Url { get; set; }
         public string Externalurl { get; set; }
+    }
+
+    public class ModuleModel
+    {
+        public long id { get; set; }
+        public string intro { get; set; }
+        public string modname { get; set; }
+        public string name { get; set; }
+        /// <summary>
+        /// Link ảnh đại diện
+        /// </summary>
+        public string picture { get; set; }
+        public int requiregrade { get; set; }
+        public int visible { get; set; }
     }
 }

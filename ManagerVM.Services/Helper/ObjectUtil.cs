@@ -23,7 +23,10 @@ namespace ManagerVM.Services.Helper
 
                 // Lấy giá trị thuộc tính
                 object propertyValue = property.GetValue(obj);
-                form.Add(new StringContent(propertyValue.ToString()), propertyName);
+                if (propertyValue != null)
+                {
+                    form.Add(new StringContent(propertyValue.ToString()), propertyName);
+                }
             }
 
             if (mores != null)
