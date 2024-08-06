@@ -22,7 +22,14 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
         public QuestionCate questionCategory { get; set; }
         public Showstandardinstruction showstandardinstruction { get; set; }
         public int shuffleanswers { get; set; }
+        public SingleModel single { get; set; }
         public string text { get; set; }
+    }
+
+    public class SingleModel
+    {
+        public int key { get; set; }
+        public string value { get; set; }
     }
 
     public class Showstandardinstruction
@@ -41,5 +48,6 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
     {
         public string answer { get; set; }
         public bool correct { get; set; }
+        public string fraction { get; set; }
     }
 }

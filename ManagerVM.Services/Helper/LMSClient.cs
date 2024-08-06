@@ -78,7 +78,7 @@ namespace ManagerVM.Services.Helper
         /// </summary>
         /// <param name="courseId"></param>
         /// <returns></returns>
-        public Task<ResponseModel<GetModuleScormResponseDataModel>> GetModuleScormlAsync(string hostName, long moduleid, string token = "");
+        public Task<ResponseModel<GetModuleScormResponseDataModel>> GetModuleScormAsync(string hostName, long moduleid, string token = "");
 
         /// <summary>
         /// Upload media
@@ -109,7 +109,7 @@ namespace ManagerVM.Services.Helper
         /// <typeparam name="T"></typeparam>
         /// <param name="model"></param>
         /// <returns></returns>
-        public Task<ResponseModel<T>> CreateStudentAsync<T>(string hostName, CreateStudentRequestModel model);
+        public Task<ResponseModel<CreateStudentResponseDataModel>> CreateStudentAsync(string hostName, CreateStudentRequestModel model);
 
         /// <summary>
         /// Tạo mới lớp học
@@ -158,7 +158,7 @@ namespace ManagerVM.Services.Helper
         /// <param name="model"></param>
         /// <returns></returns>
         /// Chưa trả về thông tin sau khi tạo
-        public Task<ResponseModel<string>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model);
+        public Task<ResponseModel<ResponseDataModel>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model);
 
         /// <summary>
         /// Lấy danh sách Question cate
@@ -174,7 +174,7 @@ namespace ManagerVM.Services.Helper
         /// <param name="questionId"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string token = "");
+        public Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string questionType, string token = "");
 
         /// <summary>
         /// Lấy chi tiết thông tin Question cate
@@ -192,7 +192,23 @@ namespace ManagerVM.Services.Helper
         /// <param name="model"></param>
         /// <returns></returns>
         /// Chưa trả về thông tin sau khi tạo
-        public Task<ResponseModel<string>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model);
+        public Task<ResponseModel<ResponseDataModel>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model);
+
+        /// <summary>
+        /// Lấy danh sách Question của module Quiz
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <param name="moduleId"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<GetListReponseDataModel<GetQuestionsOfQuizResponseDataModel>>> GetQuestionsOfQuizAsync(string hostName, long moduleId, string token = "");
+
+        /// <summary>
+        /// Thêm câu hỏi vào Quiz
+        /// </summary>
+        /// <param name="hostNam"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public Task<ResponseModel<dynamic>> AddQuestionToQuizAsync(string hostNam, AddQuestionsToQuizModel model, string token = "");
     }
 
     public class LMSClient : ILMSClient
@@ -268,7 +284,7 @@ namespace ManagerVM.Services.Helper
             return strContent?.ParseTo<ResponseModel<List<CreateCourseResponseDataModel>>>();
         }
 
-        public async Task<ResponseModel<T>> CreateStudentAsync<T>(string hostName, CreateStudentRequestModel model)
+        public async Task<ResponseModel<CreateStudentResponseDataModel>> CreateStudentAsync(string hostName, CreateStudentRequestModel model)
         {
             var token = await GetTokenAsync(hostName);
             var form = model.ToFormData(new Dictionary<string, string>
@@ -286,7 +302,7 @@ namespace ManagerVM.Services.Helper
 
             var strContent = await res.Content.ReadAsStringAsync();
 
-            return strContent?.ParseTo<ResponseModel<T>>();
+            return strContent?.ParseTo<ResponseModel<CreateStudentResponseDataModel>>();
         }
 
         public async Task<ResponseModel<GetCategoryReponseDataModel>> GetCategoryOfClassAsync(string hostName, long cateId, string token = "")
@@ -435,7 +451,7 @@ namespace ManagerVM.Services.Helper
             return (imageBytes, extension);
         }
 
-        public async Task<ResponseModel<GetModuleScormResponseDataModel>> GetModuleScormlAsync(string hostName, long moduleid, string token = "")
+        public async Task<ResponseModel<GetModuleScormResponseDataModel>> GetModuleScormAsync(string hostName, long moduleid, string token = "")
         {
             token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
 
@@ -505,7 +521,7 @@ namespace ManagerVM.Services.Helper
             return strContent?.ParseTo<ResponseModel<string>>();
         }
 
-        public async Task<ResponseModel<string>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model)
+        public async Task<ResponseModel<ResponseDataModel>> CreateQuestionCategoryAsync(string hostName, CreateQuestionCategoryRequestModel model)
         {
             var token = await GetTokenAsync(hostName);
             var form = model.ToFormData(new Dictionary<string, string>
@@ -523,7 +539,7 @@ namespace ManagerVM.Services.Helper
 
             var strContent = await res.Content.ReadAsStringAsync();
 
-            return strContent?.ParseTo<ResponseModel<string>>();
+            return strContent?.ParseTo<ResponseModel<ResponseDataModel>>();
         }
 
         public async Task<ResponseModel<GetListReponseDataModel<GetQuestionCategoriesResponseDataModel>>> GetQuestionCategoriesAsync(string hostName, string token = "")
@@ -540,13 +556,13 @@ namespace ManagerVM.Services.Helper
             return strcontent?.ParseTo<ResponseModel<GetListReponseDataModel<GetQuestionCategoriesResponseDataModel>>>();
         }
 
-        public async Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string token = "")
+        public async Task<ResponseModel<GetQuestionDetailResponseDataModel>> GetQuestionDetailAsync(string hostName, long questionId, string questionType, string token = "")
         {
             token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
 
             var _httpClient = _httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri(hostName);
-            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?id={questionId}&moodlewsrestformat=json&service=vtc_cms_api&type=multichoiceset&wsfunction=local_cms_api_questionbank_questionview&wstoken={token}");
+            var res = await _httpClient.GetAsync($"/webservice/rest/server.php?id={questionId}&moodlewsrestformat=json&service=vtc_cms_api&type={questionType}&wsfunction=local_cms_api_questionbank_questionview&wstoken={token}");
             res.EnsureSuccessStatusCode();
 
             var strcontent = await res.Content.ReadAsStringAsync();
@@ -568,7 +584,7 @@ namespace ManagerVM.Services.Helper
             return strcontent?.ParseTo<ResponseModel<GetQuestionCategoryDetailResponseDataModel>>();
         }
 
-        public async Task<ResponseModel<string>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model)
+        public async Task<ResponseModel<ResponseDataModel>> CreateQuestionAsync(string hostName, CreateQuestionRequestModel model)
         {
             var token = await GetTokenAsync(hostName);
             var form = model.ToFormData(new Dictionary<string, string>
@@ -586,7 +602,52 @@ namespace ManagerVM.Services.Helper
 
             var strContent = await res.Content.ReadAsStringAsync();
 
-            return strContent?.ParseTo<ResponseModel<string>>();
+            return strContent?.ParseTo<ResponseModel<ResponseDataModel>>();
+        }
+
+        public async Task<ResponseModel<GetListReponseDataModel<GetQuestionsOfQuizResponseDataModel>>> GetQuestionsOfQuizAsync(string hostName, long moduleId, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+            var form = (new object()).ToFormData(new Dictionary<string, string>
+            {
+                { "moodlewsrestformat", "json" },
+                { "wsfunction", "local_cms_api_course_module_get_questions_from_quiz" },
+                { "wstoken", token },
+                { "service", "vtc_cms_api" },
+                { "moduleid", moduleId.ToString() },
+                { "pageIndex", "1" },
+                { "pageSize", "100" }
+            });
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.PostAsync("/webservice/rest/server.php", form);
+            res.EnsureSuccessStatusCode();
+
+            var strContent = await res.Content.ReadAsStringAsync();
+
+            return strContent?.ParseTo<ResponseModel<GetListReponseDataModel<GetQuestionsOfQuizResponseDataModel>>>();
+        }
+
+        public async Task<ResponseModel<dynamic>> AddQuestionToQuizAsync(string hostName, AddQuestionsToQuizModel model, string token = "")
+        {
+            token = string.IsNullOrWhiteSpace(token) ? await GetTokenAsync(hostName) : token;
+            var form = model.ToFormData(new Dictionary<string, string>
+            {
+                { "moodlewsrestformat", "json" },
+                { "wsfunction", "local_cms_api_course_module_add_questions_to_quiz" },
+                { "wstoken", token },
+                { "service", "vtc_cms_api" }
+            });
+
+            var _httpClient = _httpClientFactory.CreateClient();
+            _httpClient.BaseAddress = new Uri(hostName);
+            var res = await _httpClient.PostAsync("/webservice/rest/server.php", form);
+            res.EnsureSuccessStatusCode();
+
+            var strContent = await res.Content.ReadAsStringAsync();
+
+            return strContent?.ParseTo<ResponseModel<dynamic>>();
         }
     }
 }

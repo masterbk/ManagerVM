@@ -1,4 +1,5 @@
 ﻿using ManagerVM.Data;
+using ManagerVM.Services.Features.VM.Notifications;
 using ManagerVM.Services.Helper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +22,12 @@ namespace ManagerVM.Services.Features.VM.Commands
     {
         private readonly VMDbContext _dbContext;
         private readonly IOpenStackClient _openStackClient;
-        public InstallServiceCommandHandler(VMDbContext dbContext, IOpenStackClient openStackClient)
+        private readonly IMediator _mediator;
+        public InstallServiceCommandHandler(VMDbContext dbContext, IOpenStackClient openStackClient, IMediator mediator)
         {
             _dbContext = dbContext;
             _openStackClient = openStackClient;
+            _mediator = mediator;
         }
 
         public async Task<bool> Handle(InstallServiceCommand request, CancellationToken cancellationToken)
@@ -45,8 +48,21 @@ namespace ManagerVM.Services.Features.VM.Commands
                 throw new Exception($"OpenStack is not found (Id={vmEntity.OpenStackId})!");
             }
 
-            return await _openStackClient.InstallServiceAsync(openStackEntity.EndPointUrl, vmEntity.InstanceId, request.Script.Replace("@_FullServerNameReplace", "http:\\/\\/" + vmEntity.Address)
+            var res = await _openStackClient.InstallServiceAsync(openStackEntity.EndPointUrl, vmEntity.InstanceId, request.Script.Replace("@_FullServerNameReplace", "http:\\/\\/" + vmEntity.Address)
                 .Replace("@_ServerNameReplace", vmEntity.Address));
+
+            if (res)
+            {
+                //Install LMS success
+                await _mediator.Publish(new InstalledAllServiceSuccessNotification { VMInstanceId = vmEntity.InstanceId });
+                return true;
+            }
+            else
+            {
+                throw new Exception($"Install Docker error! (VmId = {vmEntity.InstanceId})");
+            }
+
+            
         }
     }
 }

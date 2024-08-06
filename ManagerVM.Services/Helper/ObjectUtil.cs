@@ -39,5 +39,20 @@ namespace ManagerVM.Services.Helper
 
             return form;
         }
+
+        public static string ToFloatString(this string str)
+        {
+            if(str?.EndsWith(".0") == true || str?.EndsWith("0") == false)
+            {
+                return str;
+            }
+
+            if(str?.EndsWith("0") == true)
+            {
+                str = str.Substring(0, str.Length - 2);
+            }
+
+            return ToFloatString(str);
+        }
     }
 }

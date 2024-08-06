@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace ManagerVM.Contacts.Models.LMSModels.Response
 {
+    /// <summary>
+    /// wsfunction: local_cms_api_course_module_view_quiz
+    /// </summary>
     public class GetModuleQuizResponseDataModel
     {
         public long? Attemptsallowed { get; set; }

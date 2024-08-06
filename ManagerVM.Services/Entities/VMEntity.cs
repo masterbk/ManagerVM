@@ -22,5 +22,6 @@ namespace ManagerVM.Data.Entities
         public VMStatus Status { get; set; }
         public bool InstallAllServiceSuccess { get; set; }
         public string HostName { get ; set; }
+        public HostStatus HostStatus { get; set; }
     }
 }

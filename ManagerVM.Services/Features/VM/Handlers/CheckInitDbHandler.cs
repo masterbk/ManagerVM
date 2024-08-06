@@ -1,7 +1,10 @@
 ﻿using Hangfire;
 using ManagerVM.Data;
+using ManagerVM.Data.Entities;
+using ManagerVM.Services.Features.VM.Commands;
 using ManagerVM.Services.Features.VM.Notifications;
 using ManagerVM.Services.Features.VM.Notifications.DatabaseInstall;
+using ManagerVM.Services.Features.VM.Queries;
 using ManagerVM.Services.Helper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +20,11 @@ namespace ManagerVM.Services.Features.VM.Handlers
     {
         private readonly ILMSClient _lmsClient;
         private readonly IBackgroundJobClient _backgroundJobClient;
-        private readonly VMDbContext _dbContext;
         private readonly IMediator _mediator;
-        public CheckInitDbHandler(ILMSClient lmsClient, IBackgroundJobClient backgroundJobClient, VMDbContext dbContext, IMediator mediator)
+        public CheckInitDbHandler(ILMSClient lmsClient, IBackgroundJobClient backgroundJobClient,  IMediator mediator)
         {
             _lmsClient = lmsClient;
             _backgroundJobClient = backgroundJobClient;
-            _dbContext = dbContext;
             _mediator = mediator;
         }
 
@@ -35,11 +36,20 @@ namespace ManagerVM.Services.Features.VM.Handlers
 
         public async Task<bool> CheckLoginLMSAsync(InstalledAllServiceSuccessNotification notification)
         {
-            var vm = await _dbContext.VMEntities.FirstOrDefaultAsync(f => f.InstanceId.Equals(notification.VMInstanceId) && !f.IsDeleted);
+            var vm = await _mediator.Send(new GetVMQuery { InstanceId = notification.VMInstanceId });
             if (vm == null) { return false; }
+
+            if(vm.HostStatus == Contacts.Enums.HostStatus.CreatedDatabase) { return true; }
+
+            vm.HostStatus = Contacts.Enums.HostStatus.CreatingDatabase;
+            await _mediator.Send(new UpdateVMCommand { VMEntity = vm });
+
             var token = await _lmsClient.GetTokenAsync(vm.HostName);
 
             if (string.IsNullOrWhiteSpace(token)) throw new Exception("Initing database...!");
+
+            vm.HostStatus = Contacts.Enums.HostStatus.CreatedDatabase;
+            await _mediator.Send(new UpdateVMCommand { VMEntity = vm.MapTo<VMEntity>() });
 
             await _mediator.Publish(new InitializationSuccessfulDatabaseNotification { VMInstanceId = notification.VMInstanceId });
 

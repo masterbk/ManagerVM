@@ -21,4 +21,9 @@ namespace ManagerVM.Contacts.Models.LMSModels.Response
         public int ItemsTotal { get; set; }
         public List<T> Items { get; set; }
     }
+
+    public class ResponseDataModel
+    {
+        public long Id { get; set; }
+    }
 }
